@@ -3,6 +3,7 @@ package com.daizhihao.mobilesafe.activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -12,6 +13,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,20 +29,25 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+/**
+ * 这是闪屏界面
+ */
 public class SplashActivity extends AppCompatActivity {
     protected static final int CODE_UPDATE_DIALOG = 0;
     protected static final int CODE_URL_ERROR = 1;
     protected static final int CODE_NET_ERROR = 2;
     protected static final int CODE_JSON_ERROR = 3;
     protected static final int CODE_ENTER_HOME = 4;// 进入主页面
+
     private TextView tvVersion;
     private TextView tvProgress;// 下载进度展示
+
     // 服务器返回的信息
     private String mVersionName;// 版本名
     private int mVersionCode;// 版本号
@@ -53,8 +61,8 @@ public class SplashActivity extends AppCompatActivity {
                     showUpdateDailog();
                     break;
                 case CODE_URL_ERROR:
-//                    Toast.makeText(SplashActivity.this, "url错误", Toast.LENGTH_SHORT)
-//                            .show();
+                    Toast.makeText(SplashActivity.this, "url错误", Toast.LENGTH_SHORT)
+                            .show();
                     enterHome();
                     break;
                 case CODE_NET_ERROR:
@@ -75,9 +83,10 @@ public class SplashActivity extends AppCompatActivity {
                     break;
             }
         }
-
         ;
     };
+    private SharedPreferences mPref;
+    private RelativeLayout rlRoot;// 根布局
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,35 +95,108 @@ public class SplashActivity extends AppCompatActivity {
         tvVersion = (TextView) findViewById(R.id.tv_version);
         tvVersion.setText("版本名:" + getVersionName());
         tvProgress = (TextView) findViewById(R.id.tv_progress);// 默认隐藏
-        checkVerson();
+
+        rlRoot = (RelativeLayout) findViewById(R.id.rl_root);
+
+        mPref = getSharedPreferences("config", MODE_PRIVATE);
+
+        // 判断是否需要自动更新
+        boolean autoUpdate = mPref.getBoolean("auto_update", true);
+
+        if (autoUpdate) {
+            checkVerson();
+        } else {
+            mHandler.sendEmptyMessageDelayed(CODE_ENTER_HOME, 2000);// 延时2秒后发送消息
+        }
+
+        // 渐变的动画效果
+        AlphaAnimation anim = new AlphaAnimation(0.3f, 1f);
+        anim.setDuration(2000);
+        rlRoot.startAnimation(anim);
     }
 
-    //判断是否与服务器版本相同
+    /**
+     * 获取版本名称
+     *
+     * @return
+     */
+    private String getVersionName() {
+        PackageManager packageManager = getPackageManager();
+        try {
+            PackageInfo packageInfo = packageManager.getPackageInfo(
+                    getPackageName(), 0);// 获取包的信息
+
+            int versionCode = packageInfo.versionCode;
+            String versionName = packageInfo.versionName;
+
+            System.out.println("versionName=" + versionName + ";versionCode="
+                    + versionCode);
+
+            return versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            // 没有找到包名的时候会走此异常
+            e.printStackTrace();
+        }
+
+        return "";
+    }
+
+    /**
+     * 获取本地app的版本号
+     *
+     * @return
+     */
+    private int getVersionCode() {
+        PackageManager packageManager = getPackageManager();
+        try {
+            PackageInfo packageInfo = packageManager.getPackageInfo(
+                    getPackageName(), 0);// 获取包的信息
+
+            int versionCode = packageInfo.versionCode;
+            return versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+            // 没有找到包名的时候会走此异常
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
+     * 从服务器获取版本信息进行校验
+     */
     private void checkVerson() {
         final long startTime = System.currentTimeMillis();
-        new Thread(new Runnable() {
+        // 启动子线程异步加载数据
+        new Thread() {
+
             @Override
             public void run() {
-                Message msg = mHandler.obtainMessage();
+                Message msg = Message.obtain();
                 HttpURLConnection conn = null;
                 try {
-                    URL url = new URL("www.baidu.com");
+                    // 本机地址用localhost, 但是如果用模拟器加载本机的地址时,可以用ip(10.0.2.2)来替换
+                    URL url = new URL("http://10.0.2.2:8080/update.json");
                     conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");//设置请求方式
-                    conn.setConnectTimeout(5000);//设置连接超时
-                    conn.setReadTimeout(5000);//设置请求超时
-                    int responseCode = conn.getResponseCode();
+                    conn.setRequestMethod("GET");// 设置请求方法
+                    conn.setConnectTimeout(5000);// 设置连接超时
+                    conn.setReadTimeout(5000);// 设置响应超时, 连接上了,但服务器迟迟不给响应
+                    conn.connect();// 连接服务器
+
+                    int responseCode = conn.getResponseCode();// 获取响应码
                     if (responseCode == 200) {
-                        FileInputStream fileInputStream = (FileInputStream) conn.getInputStream();
-                        //拿到返回的数据
-                        String result = StreamUtils.readFromStream(fileInputStream);
-                        // 开始解析json
-                        JSONObject jo = new JSONObject();
+                        InputStream inputStream = conn.getInputStream();
+                        String result = StreamUtils.readFromStream(inputStream);
+                        // System.out.println("网络返回:" + result);
+
+                        // 解析json
+                        JSONObject jo = new JSONObject(result);
                         mVersionName = jo.getString("versionName");
                         mVersionCode = jo.getInt("versionCode");
                         mDesc = jo.getString("description");
                         mDownloadUrl = jo.getString("downloadUrl");
-                        if (mVersionCode > getVersionCode()) {
+                        // System.out.println("版本描述:" + mDesc);
+
+                        if (mVersionCode > getVersionCode()) {// 判断是否有更新
                             // 服务器的VersionCode大于本地的VersionCode
                             // 说明有更新, 弹出升级对话框
                             msg.what = CODE_UPDATE_DIALOG;
@@ -146,129 +228,116 @@ public class SplashActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                     }
+
                     mHandler.sendMessage(msg);
                     if (conn != null) {
                         conn.disconnect();// 关闭网络连接
                     }
                 }
             }
-        }).start();
+        }.start();
     }
 
     /**
-     * 跳转到主界面
+     * 升级对话框
      */
-    private void enterHome() {
-        Intent intent = new Intent(this,HomeActivity.class);
-        startActivity(intent);
-        finish();
-    }
+    protected void showUpdateDailog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("最新版本:" + mVersionName);
+        builder.setMessage(mDesc);
+        // builder.setCancelable(false);//不让用户取消对话框, 用户体验太差,尽量不要用
+        builder.setPositiveButton("立即更新", new DialogInterface.OnClickListener() {
 
-    /**
-     * 显示升级的信息
-     */
-    public void showUpdateDailog() {
-        AlertDialog.Builder mBulider = new AlertDialog.Builder(this);
-        mBulider.setTitle("最新版本:" + mVersionName);
-        mBulider.setMessage(mDesc);
-        mBulider.setPositiveButton("马上升级", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                System.out.println("立即更新");
                 download();
             }
         });
-        mBulider.setNegativeButton("下次再说", new DialogInterface.OnClickListener() {
+
+        builder.setNegativeButton("以后再说", new DialogInterface.OnClickListener() {
+
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 enterHome();
             }
         });
-        mBulider.show();
+
+        // 设置取消的监听, 用户点击返回键时会触发
+        builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
+
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                enterHome();
+            }
+        });
+
+        builder.show();
     }
 
     /**
      * 下载apk文件
      */
-    private void download() {
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+    protected void download() {
+        if (Environment.getExternalStorageState().equals(
+                Environment.MEDIA_MOUNTED)) {
+
             tvProgress.setVisibility(View.VISIBLE);// 显示进度
-            String target = Environment.getExternalStorageDirectory()+"/updata.apk";
-            HttpUtils httpUtils = new HttpUtils();
-            httpUtils.download(mDownloadUrl, target, new RequestCallBack<File>() {
+
+            String target = Environment.getExternalStorageDirectory()
+                    + "/update.apk";
+            // XUtils
+            HttpUtils utils = new HttpUtils();
+            utils.download(mDownloadUrl, target, new RequestCallBack<File>() {
+
+                // 下载文件的进度, 该方法在主线程运行
                 @Override
-                // 下载文件的进度
-                public void onLoading(long total, long current, boolean isUploading) {
+                public void onLoading(long total, long current,
+                                      boolean isUploading) {
                     super.onLoading(total, current, isUploading);
-                    tvProgress.setText("当前进度:"+current*100/total+"%");
+                    System.out.println("下载进度:" + current + "/" + total);
+                    tvProgress.setText("下载进度:" + current * 100 / total + "%");
                 }
-                //下载成功
+
+                // 下载成功,该方法在主线程运行
                 @Override
-                public void onSuccess(ResponseInfo<File> responseInfo) {
-                    //下载自动跳转到安装界面
+                public void onSuccess(ResponseInfo<File> arg0) {
+                    System.out.println("下载成功");
+                    // 跳转到系统安装页面
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.addCategory(Intent.CATEGORY_DEFAULT);
-                    intent.setDataAndType(Uri.fromFile(responseInfo.result),
+                    intent.setDataAndType(Uri.fromFile(arg0.result),
                             "application/vnd.android.package-archive");
                     // startActivity(intent);
                     startActivityForResult(intent, 0);// 如果用户取消安装的话,
                     // 会返回结果,回调方法onActivityResult
                 }
-                //下载失败
+
+                // 下载失败,该方法在主线程运行
                 @Override
-                public void onFailure(HttpException e, String s) {
+                public void onFailure(HttpException arg0, String arg1) {
                     Toast.makeText(SplashActivity.this, "下载失败!",
                             Toast.LENGTH_SHORT).show();
                 }
             });
-        }else {
-            Toast.makeText(SplashActivity.this, "没有找到sdcard",
+        } else {
+            Toast.makeText(SplashActivity.this, "没有找到sdcard!",
                     Toast.LENGTH_SHORT).show();
         }
     }
+
     // 如果用户取消安装的话,回调此方法
     @Override
-    public void onActivityReenter(int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         enterHome();
-        super.onActivityReenter(resultCode, data);
+        super.onActivityResult(requestCode, resultCode, data);
     }
-
     /**
-     * 获取系统版本名
-     *
-     * @return
+     * 进入主页面
      */
-    public String getVersionName() {
-        PackageManager packageManager = getPackageManager();
-        try {
-            // 获取包的信息
-            PackageInfo packageInfo = packageManager.getPackageInfo(getPackageName(), 0);
-            int versionCode = packageInfo.versionCode;
-            String versionName = packageInfo.versionName;
-            return versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            //没有找到包抛出异常
-            e.printStackTrace();
-        }
-        return "";
-    }
-
-    /**
-     * 获取系统版本号
-     *
-     * @return
-     */
-    public int getVersionCode() {
-        PackageManager packageManager = getPackageManager();
-        try {
-            // 获取包的信息
-            PackageInfo packageInfo = packageManager.getPackageInfo(getPackageName(), 0);
-            int versionCode = packageInfo.versionCode;
-            String versionName = packageInfo.versionName;
-            return versionCode;
-        } catch (PackageManager.NameNotFoundException e) {
-            //没有找到包抛出异常
-            e.printStackTrace();
-        }
-        return -1;
+    private void enterHome() {
+        Intent intent = new Intent(this, HomeActivity.class);
+        startActivity(intent);
+        finish();
     }
 }
