@@ -3,7 +3,7 @@
     xmlns:itheima="http://schemas.android.com/apk/res/com.itheima52.mobilesafe"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical">
 
     <TextView
         style="@style/TitleStyle"
@@ -18,21 +18,24 @@
         android:text="报警短信会发送给安全号码" />
 
     <EditText
+        android:id="@+id/et_phone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="请输入或选择安全号码" />
+        android:inputType="phone"
+        android:hint="请输入安全号码" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/btn_green_selector"
-        android:text="请选择联系人" />
+        android:text="保存联系人"
+        android:onClick="save_content"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <ImageView
             android:layout_width="wrap_content"
@@ -58,7 +61,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" >
+        android:layout_weight="1">
 
         <ImageView
             android:id="@+id/imageView1"
