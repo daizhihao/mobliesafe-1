@@ -54,5 +54,6 @@ public class LostFindActivity extends AppCompatActivity{
     public void reEnter(View view) {
         startActivity(new Intent(this,Setup1Activity.class));
         finish();
+        mPref.edit().putBoolean("configed", false).commit();
     }
 }

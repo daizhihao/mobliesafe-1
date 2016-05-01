@@ -29,6 +29,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -78,7 +79,6 @@ public class SplashActivity extends AppCompatActivity {
                 case CODE_ENTER_HOME:
                     enterHome();
                     break;
-
                 default:
                     break;
             }
@@ -99,7 +99,8 @@ public class SplashActivity extends AppCompatActivity {
         rlRoot = (RelativeLayout) findViewById(R.id.rl_root);
 
         mPref = getSharedPreferences("config", MODE_PRIVATE);
-
+        //拷贝归属地查询数据库
+        copyDB("address.db");
         // 判断是否需要自动更新
         boolean autoUpdate = mPref.getBoolean("auto_update", true);
 
@@ -339,5 +340,34 @@ public class SplashActivity extends AppCompatActivity {
         Intent intent = new Intent(this, HomeActivity.class);
         startActivity(intent);
         finish();
+    }
+    /**
+     * 拷贝数据库
+     */
+    private void copyDB(String dbName){
+        File destFile = new File(getFilesDir(), dbName);// 要拷贝的目标地址
+        if (destFile.exists()) {
+            return;
+        }
+        FileOutputStream out = null;
+        InputStream in = null;
+        try {
+            in = getAssets().open(dbName);
+            out = new FileOutputStream(destFile);
+            int len = 0;
+            byte[] buffer = new byte[1024];
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                in.close();
+                out.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

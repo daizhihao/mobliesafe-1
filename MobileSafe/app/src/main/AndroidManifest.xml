@@ -22,14 +22,20 @@
         <activity android:name=".activity.Setup2Activity" />
         <activity android:name=".activity.Setup3Activity" />
         <activity android:name=".activity.Setup4Activity" />
-        <service android:name=".service.LocationService"/>
+        <activity android:name=".activity.AToolsActivity" />
+        <activity android:name=".activity.AddressActivity" />
+        <activity android:name=".activity.DragViewActivity" />
+
+        <service android:name=".service.LocationService" />
+        <service android:name=".service.AddressService" />
+
         <receiver android:name=".receiver.BootCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".receiver.SmsReceiver" >
-            <intent-filter android:priority="2147483647" >
+        <receiver android:name=".receiver.SmsReceiver">
+            <intent-filter android:priority="2147483647">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
@@ -43,4 +49,7 @@
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 </manifest>

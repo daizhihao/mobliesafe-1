@@ -59,6 +59,8 @@ public class Setup4Activity extends BaseSetupActivity {
     public void shownextPage() {
         startActivity(new Intent(this,LostFindActivity.class));
         finish();
+        // 更新sp,表示已经展示过设置向导了,下次进来就不展示啦
+        mPref.edit().putBoolean("configed", true).commit();
         // 两个界面切换的动画, 进入动画和退出动画
         overridePendingTransition(R.anim.tran_in,R.anim.tran_out);
     }
