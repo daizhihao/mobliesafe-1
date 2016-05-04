@@ -35,4 +35,12 @@
         android:layout_height="wrap_content"
         android:id="@+id/scv_address_location">
     </com.daizhihao.mobilesafe.view.SettingClickView>
+    <com.daizhihao.mobilesafe.view.SettingItemView
+        android:id="@+id/siv_callsafe"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        hysy:desc_off="黑名单更新已经关闭"
+        hysy:desc_on="黑名单更新已经开启"
+        hysy:tv_title="黑名单更新设置">
+    </com.daizhihao.mobilesafe.view.SettingItemView>
 </LinearLayout>

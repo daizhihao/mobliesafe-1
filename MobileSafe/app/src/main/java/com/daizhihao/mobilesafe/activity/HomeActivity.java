@@ -52,11 +52,14 @@ public class HomeActivity extends AppCompatActivity {
                     case 0:
                         showPasswordDialog();
                         break;
-                    case 8:
-                        startActivity(new Intent(HomeActivity.this, SettingActivity.class));
+                    case 1:
+                        startActivity(new Intent(HomeActivity.this, CallSafeActivity.class));
                         break;
                     case 7:
                         startActivity(new Intent(HomeActivity.this, AToolsActivity.class));
+                        break;
+                    case 8:
+                        startActivity(new Intent(HomeActivity.this, SettingActivity.class));
                         break;
                 }
             }
@@ -95,16 +98,16 @@ public class HomeActivity extends AppCompatActivity {
                 String password = ev_password.getText().toString();
                 String savedPassword = mPref.getString("password", null);
                 //判断String是否为空字符串
-               if (!TextUtils.isEmpty(password)){
-                   if (MD5Utils.encode(password).equals(savedPassword)){
-                       startActivity(new Intent(HomeActivity.this,LostFindActivity.class));
-                       alertDialog.dismiss();
-                   }else {
-                       Toast.makeText(HomeActivity.this, "密码错误", Toast.LENGTH_SHORT).show();
-                   }
-               }else {
-                   Toast.makeText(HomeActivity.this, "输入框不能为空", Toast.LENGTH_SHORT).show();
-               }
+                if (!TextUtils.isEmpty(password)) {
+                    if (MD5Utils.encode(password).equals(savedPassword)) {
+                        startActivity(new Intent(HomeActivity.this, LostFindActivity.class));
+                        alertDialog.dismiss();
+                    } else {
+                        Toast.makeText(HomeActivity.this, "密码错误", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(HomeActivity.this, "输入框不能为空", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         btn_cancel.setOnClickListener(new View.OnClickListener() {
