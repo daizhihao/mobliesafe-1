@@ -99,7 +99,7 @@ public class SplashActivity extends AppCompatActivity {
         rlRoot = (RelativeLayout) findViewById(R.id.rl_root);
         mPref = getSharedPreferences("config", MODE_PRIVATE);
         //创建快捷方式
-        createShortcut();
+//        createShortcut();
         //拷贝归属地查询数据库
         copyDB("address.db");
         // 判断是否需要自动更新
