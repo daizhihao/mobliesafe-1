@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.daizhihao.mobilesafe.R;
+import com.daizhihao.mobilesafe.db.dao.AntivirusDao;
 import com.daizhihao.mobilesafe.utils.StreamUtils;
 import com.lidroid.xutils.HttpUtils;
 import com.lidroid.xutils.exception.HttpException;
@@ -55,6 +56,8 @@ public class SplashActivity extends AppCompatActivity {
     private int mVersionCode;// 版本号
     private String mDesc;// 版本描述
     private String mDownloadUrl;// 下载地址
+    //病毒数据库工具
+    private AntivirusDao dao;
 
     private Handler mHandler = new Handler() {
         public void handleMessage(android.os.Message msg) {
@@ -84,6 +87,7 @@ public class SplashActivity extends AppCompatActivity {
                     break;
             }
         }
+
         ;
     };
     private SharedPreferences mPref;
@@ -102,6 +106,10 @@ public class SplashActivity extends AppCompatActivity {
 //        createShortcut();
         //拷贝归属地查询数据库
         copyDB("address.db");
+         //拷贝资产目录下的病毒数据库
+        copyDB("antivirus.db");
+        //更新病毒数据库
+        updataVirus();
         // 判断是否需要自动更新
         boolean autoUpdate = mPref.getBoolean("auto_update", true);
         if (autoUpdate) {
@@ -115,6 +123,41 @@ public class SplashActivity extends AppCompatActivity {
         rlRoot.startAnimation(anim);
     }
 
+
+    /**
+     * 进行更新病毒数据库
+     */
+    private void updataVirus() {
+
+//        dao = new AntivirusDao();
+//
+//        //联网从服务器获取到最新数据的md5的特征码
+//
+//        HttpUtils httpUtils = new HttpUtils();
+//        //服务器端数据
+//        String url = "http://192.168.13.126:8080/virus.json";
+//
+//        httpUtils.send(HttpRequest.HttpMethod.GET, url, new RequestCallBack<String>() {
+//
+//            @Override
+//            public void onFailure(HttpException arg0, String arg1) {
+//
+//            }
+//            @Override
+//            public void onSuccess(ResponseInfo<String> arg0) {
+//                System.out.println(arg0.result);
+//                try {
+//                    JSONObject jsonObject = new JSONObject(arg0.result);
+//                    Gson gson = new Gson();
+//                    //解析json
+//                    VirusInfo virus = gson.fromJson(arg0.result, VirusInfo.class);
+//                    dao.addVirus(virus.md5, virus.desc);
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+    }
     /**
      * 创建快捷方式
      */
@@ -359,6 +402,7 @@ public class SplashActivity extends AppCompatActivity {
         enterHome();
         super.onActivityResult(requestCode, resultCode, data);
     }
+
     /**
      * 进入主页面
      */
@@ -367,10 +411,11 @@ public class SplashActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
     /**
      * 拷贝数据库
      */
-    private void copyDB(String dbName){
+    private void copyDB(String dbName) {
         File destFile = new File(getFilesDir(), dbName);// 要拷贝的目标地址
         if (destFile.exists()) {
             return;
