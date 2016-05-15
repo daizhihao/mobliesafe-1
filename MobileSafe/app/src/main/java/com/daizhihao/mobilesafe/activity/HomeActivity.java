@@ -1,6 +1,7 @@
 package com.daizhihao.mobilesafe.activity;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -19,6 +20,8 @@ import android.widget.Toast;
 
 import com.daizhihao.mobilesafe.R;
 import com.daizhihao.mobilesafe.utils.MD5Utils;
+import com.daizhihao.mobilesafe.utils.SmsUtils;
+import com.daizhihao.mobilesafe.utils.UIUtils;
 
 /**
  * 主页面
@@ -26,9 +29,10 @@ import com.daizhihao.mobilesafe.utils.MD5Utils;
  */
 public class HomeActivity extends AppCompatActivity {
     private GridView gvHome;
+    private ProgressDialog mProgressDialog;
 
     private String[] mItems = new String[]{"手机防盗", "通讯卫士", "软件管理", "进程管理",
-            "流量统计", "手机杀毒", "缓存清理", "高级工具", "设置中心"};
+            "短信备份", "手机杀毒", "程序锁", "高级工具", "设置中心"};
 
     private int[] mPics = new int[]{R.drawable.home_safe,
             R.drawable.home_callmsgsafe, R.drawable.home_apps,
@@ -61,11 +65,21 @@ public class HomeActivity extends AppCompatActivity {
                     case 2:
                         startActivity(new Intent(HomeActivity.this, AppManagerActivity.class));
                         break;
+                    //进程管理
                     case 3:
                         startActivity(new Intent(HomeActivity.this, TaskManagerActivity.class));
-                        break;//进程管理
+                        break;
+                    //短信备份
+                    case 4:
+                        backUpsms();
+                        break;
+                    //手机杀毒
                     case 5:
                         startActivity(new Intent(HomeActivity.this, AntivirusActivity.class));
+                        break;
+                    //程序锁
+                    case 6:
+                        startActivity(new Intent(HomeActivity.this, appLockActivity.class));
                         break;
                     //高级工具
                     case 7:
@@ -78,6 +92,40 @@ public class HomeActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    /**
+     * 备份短信
+     */
+    public void backUpsms() {
+        mProgressDialog = new ProgressDialog(HomeActivity.this);
+        mProgressDialog.setTitle("提示");
+        mProgressDialog.setMessage("稍安勿躁，正在更新...");
+        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        mProgressDialog.show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                boolean result = SmsUtils.backUp(HomeActivity.this, new SmsUtils.BackUpCallBackSms() {
+                    @Override
+                    public void befor(int count) {
+                        mProgressDialog.setMax(count);
+                    }
+
+                    @Override
+                    public void onBackUpSms(int process) {
+                        mProgressDialog.setProgress(process);
+                    }
+                });
+                if (result) {
+                    //安全弹吐司的方法
+                    UIUtils.showToast(HomeActivity.this, "备份成功,备份目录:sd卡sms.xml");
+                } else {
+                    UIUtils.showToast(HomeActivity.this, "备份失败");
+                }
+                mProgressDialog.dismiss();
+            }
+        }).start();
     }
 
     /**
